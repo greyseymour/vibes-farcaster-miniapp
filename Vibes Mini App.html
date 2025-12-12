@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibes - Farcaster Mini App</title>
+    
+    <!-- Farcaster Mini App Frame Metadata -->
+    <meta property="fc:frame" content="vNext" />
+    <meta property="fc:frame:image" content="https://images.unsplash.com/photo-1679039615882-cd588104715c?w=1200&h=630&fit=crop" />
+    <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
+    <meta property="fc:frame:button:1" content="🚀 Launch Vibes" />
+    <meta property="fc:frame:button:1:action" content="launch_frame" />
+    <meta property="fc:frame:button:1:target" content="" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg-primary: #0a0e27;
+            --color-bg-secondary: #1a1f3a;
+            --color-bg-tertiary: #252d4a;
+            --color-text-primary: #e8eaed;
+            --color-text-secondary: #a8adb5;
+            --color-accent-primary: #00d4ff;
+            --color-accent-secondary: #7c3aed;
+            --color-accent-tertiary: #ec4899;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            
+            --gradient-main: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #00d4ff 100%);
+            --gradient-hover: linear-gradient(135deg, #6d28d9 0%, #db2777 50%, #06b6d4 100%);
+            
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Splash Screen */
+        .splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color-bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.6s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .splash-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .splash-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .splash-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .splash-loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-accent-secondary);
+            border-top-color: var(--color-accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            opacity: 0;
+            transition: opacity 0.6s ease 0.3s;
+            z-index: 1;
+        }
+
+        .main-content.visible {
+            opacity: 1;
+        }
+
+        /* Header */
+        .header {
+            padding: 1.5rem;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header-title-icon {
+            font-size: 1.75rem;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--color-text-secondary);
+        }
+
+        .stat-value {
+            color: var(--color-accent-primary);
+            font-weight: 600;
+        }
+
+        /* Main Section */
+        .section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            gap: 1.5rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .section::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .section::-webkit-scrollbar-thumb {
+            background: var(--color-bg-tertiary);
+            border-radius: 3px;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-bg-tertiary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .card:hover {
+            border-color: var(--color-accent-primary);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card.vibe-card {
+            background: var(--gradient-main);
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease infinite;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .vibe-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: glow 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes glow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+
+        .vibe-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .vibe-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .vibe-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .vibe-user-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+        }
+
+        .vibe-user-info p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            margin: 0;
+        }
+
+        .vibe-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: white;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .vibe-type {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .vibe-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .action-btn-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .action-btn-small:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        /* Input Group */
+        .input-group {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        input.form-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-bg-tertiary);
+            border-radius: 0.5rem;
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input.form-input:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        input.form-input::placeholder {
+            color: var(--color-text-secondary);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--gradient-main);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            background: var(--gradient-hover);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-accent-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-accent-primary);
+            color: var(--color-bg-primary);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* User List */
+        .user-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1rem;
+        }
+
+        .user-item {
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-bg-tertiary);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-item:hover {
+            border-color: var(--color-accent-primary);
+            transform: scale(1.05);
+        }
+
+        .user-item.selected {
+            border-color: var(--color-accent-primary);
+            background: var(--gradient-main);
+        }
+
+        .user-item-avatar {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-item-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-item.selected .user-item-name {
+            color: white;
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-bg-tertiary);
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .leaderboard-item:hover {
+            border-color: var(--color-accent-primary);
+            transform: translateX(4px);
+        }
+
+        .leaderboard-rank {
+            width: 40px;
+            height: 40px;
+            background: var(--color-bg-tertiary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .leaderboard-rank.top3 {
+            background: var(--gradient-main);
+            color: white;
+        }
+
+        .leaderboard-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .leaderboard-score {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .leaderboard-value {
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--color-bg-tertiary);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+            position: relative;
+            bottom: -1px;
+        }
+
+        .tab:hover {
+            color: var(--color-text-primary);
+        }
+
+        .tab.active {
+            color: var(--color-accent-primary);
+            border-bottom-color: var(--color-accent-primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-desc {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .splash-title {
+                font-size: 2rem;
+            }
+
+            .header-stats {
+                font-size: 0.75rem;
+                gap: 0.5rem;
+            }
+
+            .section {
+                padding: 1.5rem 1rem;
+            }
+
+            .user-list {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Splash Screen -->
+        <div class="splash-screen" id="splashScreen">
+            <div class="splash-logo">✨</div>
+            <div class="splash-title">Vibes</div>
+            <div class="splash-subtitle">Generate personalized vibes for your frens</div>
+            <div class="splash-loader"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-title">
+                    <span class="header-title-icon">✨</span>
+                    <span>Vibes</span>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <span>💫</span>
+                        <span>Generated: <span class="stat-value" id="generatedCount">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <span>❤️</span>
+                        <span>Liked: <span class="stat-value" id="likedCount">0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Section -->
+            <div class="section" id="mainSection">
+                <!-- Tab Navigation -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="generate">Generate</button>
+                    <button class="tab" data-tab="leaderboard">Leaderboard</button>
+                    <button class="tab" data-tab="history">History</button>
+                </div>
+
+                <!-- Generate Tab -->
+                <div id="generate-tab" class="tab-content">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin-bottom: 0.5rem;">Pick a fren</h2>
+                        <p style="color: var(--color-text-secondary); font-size: 0.9rem;">Select someone to roast or compliment</p>
+                    </div>
+
+                    <div class="user-list" id="userList"></div>
+
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="customUserInput" 
+                            placeholder="Enter Farcaster handle"
+                        >
+                        <button class="btn btn-primary" id="customUserBtn">Go</button>
+                    </div>
+
+                    <div id="vibeResult" style="width: 100%; max-width: 400px; min-height: 100px;"></div>
+
+                    <button class="btn btn-primary" id="generateBtn" style="display: none; margin-top: 1rem;">
+                        ✨ Generate Vibe
+                    </button>
+                </div>
+
+                <!-- Leaderboard Tab -->
+                <div id="leaderboard-tab" class="tab-content" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin-bottom: 0.5rem;">Top Vibes</h2>
+                        <p style="color: var(--color-text-secondary); font-size: 0.9rem;">Most roasted & loved frens</p>
+                    </div>
+                    <div class="leaderboard" id="leaderboardList"></div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="history-tab" class="tab-content" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin-bottom: 0.5rem;">Your History</h2>
+                        <p style="color: var(--color-text-secondary); font-size: 0.9rem;">Vibes you've generated</p>
+                    </div>
+                    <div id="historyList" style="width: 100%; max-width: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock data - In production, this would come from Neynar API
+        const mockUsers = [
+            { id: 1, username: 'ayrenne', avatar: '🚀', displayName: 'Ayrenne' },
+            { id: 2, username: 'dan_romero', avatar: '🎭', displayName: 'Dan Romero' },
+            { id: 3, username: 'vitalik', avatar: '🧬', displayName: 'Vitalik' },
+            { id: 4, username: 'verb', avatar: '🎨', displayName: 'Verb' },
+            { id: 5, username: 'ericc', avatar: '⚡', displayName: 'Eric C' },
+            { id: 6, username: 'linda', avatar: '💫', displayName: 'Linda' },
+        ];
+
+        const vibeTemplates = {
+            roast: [
+                "Your takes are as spicy as your avatar choices 🌶️",
+                "Building on Base but your ideas are on L1 energy ⛓️",
+                "You post like someone with 50 ENS names but no actual use case 😂",
+                "Probably tweets about 'onchain summer' while sleeping ⏰",
+                "Your portfolio diversification strategy: asking in Discord 📊",
+            ],
+            compliment: [
+                "Absolutely crushing it in the builder ecosystem 💪",
+                "The kind of fren who actually reads docs before asking 📚",
+                "Your vibe check: PASSED with flying colors ✅",
+                "Genuinely making Farcaster better, one cast at a time 🌟",
+                "Someone get this fren a grant already 🏆",
+            ]
+        };
+
+        // State
+        let state = {
+            selectedUser: null,
+            generatedVibes: [],
+            likedVibes: [],
+            leaderboard: {},
+            currentTab: 'generate'
+        };
+
+        // Initialize
+        function init() {
+            setupEventListeners();
+            loadMockData();
+            hideSplash();
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    switchTab(e.target.dataset.tab);
+                });
+            });
+
+            // User selection
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('.user-item')) {
+                    selectUser(e.target.closest('.user-item'));
+                }
+            });
+
+            // Generate button
+            document.getElementById('generateBtn').addEventListener('click', generateVibe);
+
+            // Custom user input
+            document.getElementById('customUserBtn').addEventListener('click', () => {
+                const handle = document.getElementById('customUserInput').value.trim();
+                if (handle) {
+                    selectCustomUser(handle);
+                }
+            });
+
+            // Action buttons
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn-small')) {
+                    const action = e.target.dataset.action;
+                    const vibeId = e.target.closest('.card')?.dataset.vibeId;
+                    handleAction(action, vibeId);
+                }
+            });
+        }
+
+        function loadMockData() {
+            renderUserList();
+            state.leaderboard = {
+                'vitalik': 12,
+                'dan_romero': 8,
+                'verb': 6,
+                'linda': 5,
+                'ericc': 4,
+                'ayrenne': 3
+            };
+            renderLeaderboard();
+        }
+
+        function hideSplash() {
+            setTimeout(() => {
+                document.getElementById('splashScreen').classList.add('hidden');
+                document.getElementById('mainContent').classList.add('visible');
+            }, 1500);
+        }
+
+        function renderUserList() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = mockUsers.map(user => `
+                <div class="user-item" data-user-id="${user.id}">
+                    <div class="user-item-avatar">${user.avatar}</div>
+                    <div class="user-item-name">${user.username}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectUser(element) {
+            document.querySelectorAll('.user-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            const userId = element.dataset.userId;
+            state.selectedUser = mockUsers.find(u => u.id === parseInt(userId));
+            
+            document.getElementById('generateBtn').style.display = 'inline-flex';
+            document.getElementById('vibeResult').innerHTML = '';
+        }
+
+        function selectCustomUser(handle) {
+            state.selectedUser = {
+                username: handle,
+                displayName: handle.charAt(0).toUpperCase() + handle.slice(1),
+                avatar: '✨'
+            };
+            document.getElementById('generateBtn').style.display = 'inline-flex';
+        }
+
+        function generateVibe() {
+            if (!state.selectedUser) return;
+
+            const isRoast = Math.random() > 0.4;
+            const template = isRoast ? 
+                vibeTemplates.roast[Math.floor(Math.random() * vibeTemplates.roast.length)] :
+                vibeTemplates.compliment[Math.floor(Math.random() * vibeTemplates.compliment.length)];
+
+            const vibe = {
+                id: Date.now(),
+                user: state.selectedUser,
+                text: template,
+                type: isRoast ? 'Roast' : 'Compliment',
+                timestamp: new Date(),
+                likes: 0
+            };
+
+            state.generatedVibes.unshift(vibe);
+            state.leaderboard[state.selectedUser.username] = (state.leaderboard[state.selectedUser.username] || 0) + 1;
+
+            updateStats();
+            renderVibe(vibe);
+            renderLeaderboard();
+        }
+
+        function renderVibe(vibe) {
+            const vibeResult = document.getElementById('vibeResult');
+            vibeResult.innerHTML = `
+                <div class="card vibe-card" data-vibe-id="${vibe.id}">
+                    <div class="vibe-content">
+                        <div class="vibe-header">
+                            <div class="vibe-avatar">${vibe.user.avatar}</div>
+                            <div class="vibe-user-info">
+                                <h3>@${vibe.user.username}</h3>
+                                <p>${vibe.user.displayName}</p>
+                            </div>
+                        </div>
+                        <div class="vibe-type">${vibe.type}</div>
+                        <div class="vibe-text">${vibe.text}</div>
+                    </div>
+                    <div class="vibe-actions">
+                        <button class="action-btn-small" data-action="like" title="Like">❤️</button>
+                        <button class="action-btn-small" data-action="share" title="Share">📤</button>
+                        <button class="action-btn-small" data-action="screenshot" title="Screenshot">📸</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAction(action, vibeId) {
+            const vibe = state.generatedVibes.find(v => v.id === parseInt(vibeId));
+            if (!vibe) return;
+
+            switch(action) {
+                case 'like':
+                    vibe.likes++;
+                    state.likedVibes.push(vibeId);
+                    updateStats();
+                    break;
+                case 'share':
+                    const shareText = `Check out my vibe: "${vibe.text}" - Generated on Vibes 🚀`;
+                    if (navigator.share) {
+                        navigator.share({ title: 'Vibes', text: shareText });
+                    } else {
+                        alert('Shared: ' + shareText);
+                    }
+                    break;
+                case 'screenshot':
+                    alert('Screenshot feature - implement html2canvas in production');
+                    break;
+            }
+        }
+
+        function renderLeaderboard() {
+            const leaderboard = document.getElementById('leaderboardList');
+            const sorted = Object.entries(state.leaderboard)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            leaderboard.innerHTML = sorted.map((entry, index) => {
+                const user = mockUsers.find(u => u.username === entry[0]) || { avatar: '✨', displayName: entry[0] };
+                return `
+                    <div class="leaderboard-item">
+                        <div class="leaderboard-rank ${index < 3 ? 'top3' : ''}">#${index + 1}</div>
+                        <div class="leaderboard-info">
+                            <div class="leaderboard-name">${user.displayName || entry[0]}</div>
+                            <div class="leaderboard-score">
+                                <span class="leaderboard-value">${entry[1]}</span> vibes roasted
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (sorted.length === 0) {
+                leaderboard.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-title">No data yet</div>
+                        <div class="empty-state-desc">Generate some vibes to see the leaderboard!</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderHistory() {
+            const history = document.getElementById('historyList');
+            if (state.generatedVibes.length === 0) {
+                history.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📜</div>
+                        <div class="empty-state-title">No history yet</div>
+                        <div class="empty-state-desc">Your generated vibes will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            history.innerHTML = state.generatedVibes.map(vibe => `
+                <div class="card" style="margin-bottom: 1rem; background: var(--color-bg-secondary); cursor: default;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong>@${vibe.user.username}</strong>
+                            <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${vibe.type}</div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${vibe.timestamp.toLocaleDateString()}</div>
+                    </div>
+                    <p style="margin: 0; font-size: 0.95rem; color: var(--color-text-primary);">"${vibe.text}"</p>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem; color: var(--color-text-secondary);">
+                        <span>❤️ ${vibe.likes}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tabName) {
+            state.currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(`${tabName}-tab`).style.display = 'block';
+
+            if (tabName === 'history') {
+                renderHistory();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('generatedCount').textContent = state.generatedVibes.length;
+            document.getElementById('likedCount').textContent = state.likedVibes.length;
+        }
+
+        // Initialize on load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
